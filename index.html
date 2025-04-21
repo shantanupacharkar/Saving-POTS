@@ -74,7 +74,7 @@
                 </div>
               `).join('')}
               <div class="flex justify-end mt-2">
-                <button onclick="deletePot(${index})" class="bg-red-500 text-white px-3 py-1 rounded flex items-center space-x-1">
+               <button onclick="deletePot(${index})" class="bg-red-500 text-white w-full py-3 rounded-t-none">Delete Pot</button>
                   <span>Delete Pot</span>
                   <span>✖</span>
                 </button>
@@ -92,8 +92,8 @@
           </div>
           <div class="flex space-x-2 items-center">
             <input type="number" id="add-${index}" placeholder="Amount" class="border p-1 rounded w-full">
-            <button onclick="addMoney(${index})" class="bg-green-500 text-white px-2 rounded">➕</button>
-            <button onclick="removeMoney(${index})" class="bg-red-500 text-white px-2 rounded">➖</button>
+            <button onclick="addMoney(${index})" class="bg-green-500 text-white px-2 py-2 rounded h-full">➕</button>
+            <button onclick="removeMoney(${index})" class="bg-red-500 text-white px-2 py-2 rounded h-full">➖</button>
           </div>
           ${transactionsHTML}
         `;
