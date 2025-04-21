@@ -122,12 +122,24 @@
       const name = document.getElementById('potName').value;
       const goal = parseFloat(document.getElementById('potGoal').value);
       if (!name || isNaN(goal) || goal <= 0) return alert('Enter valid name and goal');
+      
+      // Add the new pot to the array
       pots.push({ name, goal, amount: 0, transactions: [] });
+    
+      // Save the updated pots to localStorage
       savePots();
+    
+      // Render pots again to show the new one
       renderPots();
+    
+      // Clear the input fields
       document.getElementById('potName').value = '';
       document.getElementById('potGoal').value = '';
+    
+      // Hide the Create Pot Form after adding the pot
+      document.getElementById('createPotForm').classList.add('hidden');
     }
+
 
     function addMoney(index) {
       const input = document.getElementById(`add-${index}`);
