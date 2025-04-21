@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+  <title>My Savings Pots</title>
+  <style>
+    body { background-color: #f9fafb; }
+    .pot-card { transition: all 0.2s ease-in-out; }
+    .pot-card:hover { transform: scale(1.02); }
+  </style>
+</head>
+<body class="p-4 font-sans">
+  <div class="max-w-xl mx-auto">
+    <h1 class="text-2xl font-bold mb-4">💰 My Savings Pots</h1>
+
+    <!-- Form for creating a new savings pot -->
+    <div class="mb-6 bg-white p-4 rounded-xl shadow">
+      <h2 class="font-semibold mb-2">Create New Pot</h2>
+      <input id="potName" type="text" placeholder="Name (e.g., Europe Trip)" class="border p-2 w-full rounded mb-2">
+      <input id="potGoal" type="number" placeholder="Goal Amount" class="border p-2 w-full rounded mb-2">
+      <button onclick="createPot()" class="bg-blue-500 text-white px-4 py-2 rounded w-full">Add Pot</button>
+    </div>
+
+    <!-- Container where all pots will be displayed -->
+    <div id="potsContainer" class="space-y-4"></div>
+  </div>
+
+  <script>
+    // Load saved pots from localStorage or start with an empty array
+    let pots = JSON.parse(localStorage.getItem('pots') || '[]');
+
+    // Save current pots state to localStorage
+    function savePots() {
+      localStorage.setItem('pots', JSON.stringify(pots));
+    }
+
+    // Render all savings pots to the screen
+    function renderPots() {
+      const container = document.getElementById('potsContainer');
+      container.innerHTML = ''; // Clear existing content
+
+      pots.forEach((pot, index) => {
+        // Calculate percentage filled for progress bar
+        const percentage = Math.min(100, (pot.amount / pot.goal) * 100);
+
+        // Create pot card element
+        const potEl = document.createElement('div');
+        potEl.className = 'bg-white rounded-xl shadow p-4 pot-card';
+        potEl.innerHTML = `
+          <div class="flex justify-between items-center mb-1">
+            <div class="font-semibold">${pot.name}</div>
+            <div class="text-sm text-gray-500">₹${pot.amount} / ₹${pot.goal}</div>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+            <div class="bg-green-500 h-2.5 rounded-full" style="width: ${percentage}%;"></div>
+          </div>
+          <div class="flex space-x-2">
+            <input type="number" id="add-${index}" placeholder="Amount" class="border p-1 rounded w-full">
+            <button onclick="addMoney(${index})" class="bg-green-500 text-white px-2 rounded">➕</button>
+            <button onclick="removeMoney(${index})" class="bg-red-500 text-white px-2 rounded">➖</button>
+          </div>
+        `;
+        container.appendChild(potEl); // Add to container
+      });
+    }
+
+    // Create a new savings pot
+    function createPot() {
+      const name = document.getElementById('potName').value;
+      const goal = parseFloat(document.getElementById('potGoal').value);
+      if (!name || isNaN(goal) || goal <= 0) return alert('Enter valid name and goal');
+
+      // Add new pot to the list and re-render
+      pots.push({ name, goal, amount: 0 });
+      savePots();
+      renderPots();
+
+      // Clear input fields
+      document.getElementById('potName').value = '';
+      document.getElementById('potGoal').value = '';
+    }
+
+    // Add money to a specific pot
+    function addMoney(index) {
+      const input = document.getElementById(`add-${index}`);
+      const amount = parseFloat(input.value);
+      if (isNaN(amount) || amount <= 0) return;
+
+      pots[index].amount += amount;
+      savePots();
+      renderPots();
+    }
+
+    // Remove money from a specific pot (without going below 0)
+    function removeMoney(index) {
+      const input = document.getElementById(`add-${index}`);
+      const amount = parseFloat(input.value);
+      if (isNaN(amount) || amount <= 0) return;
+
+      pots[index].amount = Math.max(0, pots[index].amount - amount);
+      savePots();
+      renderPots();
+    }
+
+    // Initialize app on load
+    window.onload = () => {
+      // Register service worker for PWA support
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('service-worker.js');
+      }
+
+      renderPots(); // Show pots on load
+    };
+  </script>
+</body>
+</html>
