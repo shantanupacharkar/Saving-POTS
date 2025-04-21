@@ -10,6 +10,8 @@
     body { background-color: #f9fafb; }
     .pot-card { transition: all 0.2s ease-in-out; cursor: pointer; }
     .pot-card:hover { transform: scale(1.02); }
+    .button-size { height: 38px; padding: 0 12px; } /* Ensures buttons are the same size as input fields */
+    .icon-size { font-size: 18px; }
   </style>
 </head>
 <body class="p-4 font-sans">
@@ -46,6 +48,11 @@
       return `₹${value.toLocaleString()}`;
     }
 
+    function formatTimestamp(timestamp) {
+      const date = new Date(timestamp);
+      return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}`;
+    }
+
     function renderPots() {
       const container = document.getElementById('potsContainer');
       container.innerHTML = '';
@@ -66,20 +73,18 @@
 
         let transactionsHTML = '';
         if (expandedIndex === index && pot.transactions) {
-          transactionsHTML = `
-            <div class="mt-4 space-y-1">
-              ${pot.transactions.slice().reverse().map(t => `
-                <div class="text-sm text-gray-600">
-                  ${t.type === 'add' ? '➕' : '➖'} ${formatCurrency(t.amount)}
+          if (pot.transactions.length === 0) {
+            transactionsHTML = '<div class="text-center">No transactions yet</div>';
+          } else {
+            transactionsHTML = pot.transactions.map(transaction => {
+              return `
+                <div class="flex justify-between mb-2">
+                  <span>${transaction.amount > 0 ? '➕' : '➖'} ${formatCurrency(Math.abs(transaction.amount))}</span>
+                  <span>(${formatTimestamp(transaction.timestamp)})</span>
                 </div>
-              `).join('')}
-              <div class="flex justify-end mt-2">
-                <button onclick="deletePot(${index})" class="bg-red-500 text-white px-3 py-1 rounded flex items-center space-x-1">
-                  <span>Delete Pot</span>
-                  <span>✖</span>
-                </button>
-              </div>
-            </div>`;
+              `;
+            }).join('');
+          }
         }
 
         potEl.innerHTML = `
@@ -90,14 +95,18 @@
           <div class="w-full bg-gray-200 rounded-full h-2.5 mb-4">
             <div class="bg-green-500 h-2.5 rounded-full" style="width: ${percentage}%;"></div>
           </div>
-          <div class="flex space-x-2 items-center">
-            <input type="number" id="add-${index}" placeholder="Amount" class="border p-1 rounded w-full">
-            <button onclick="addMoney(${index})" class="bg-green-500 text-white px-2 rounded">➕</button>
-            <button onclick="removeMoney(${index})" class="bg-red-500 text-white px-2 rounded">➖</button>
+          <div class="flex space-x-2">
+            <input type="number" id="add-${index}" placeholder="Amount" class="border p-2 rounded w-full">
+            <button onclick="addMoney(${index})" class="bg-green-500 text-white px-2 rounded button-size">➕</button>
+            <button onclick="removeMoney(${index})" class="bg-red-500 text-white px-2 rounded button-size">➖</button>
           </div>
-          ${transactionsHTML}
+          ${expandedIndex === index ? `
+            <div class="mt-4">
+              ${transactionsHTML}
+              <button onclick="deletePot(${index})" class="text-red-500 mt-2 flex items-center space-x-2"><span>❌</span><span>Delete Pot</span></button>
+            </div>
+          ` : ''}
         `;
-
         container.appendChild(potEl);
       });
     }
@@ -111,7 +120,6 @@
       renderPots();
       document.getElementById('potName').value = '';
       document.getElementById('potGoal').value = '';
-      document.getElementById('createPotForm').classList.add('hidden');
     }
 
     function addMoney(index) {
@@ -119,8 +127,7 @@
       const amount = parseFloat(input.value);
       if (isNaN(amount) || amount <= 0) return;
       pots[index].amount += amount;
-      pots[index].transactions = pots[index].transactions || [];
-      pots[index].transactions.push({ type: 'add', amount });
+      pots[index].transactions.push({ amount, timestamp: Date.now() });
       savePots();
       renderPots();
     }
@@ -130,24 +137,18 @@
       const amount = parseFloat(input.value);
       if (isNaN(amount) || amount <= 0) return;
       pots[index].amount = Math.max(0, pots[index].amount - amount);
-      pots[index].transactions = pots[index].transactions || [];
-      pots[index].transactions.push({ type: 'remove', amount });
+      pots[index].transactions.push({ amount: -amount, timestamp: Date.now() });
       savePots();
       renderPots();
     }
 
     function deletePot(index) {
-      if (!confirm('Are you sure you want to delete this pot?')) return;
       pots.splice(index, 1);
-      expandedIndex = null;
       savePots();
       renderPots();
     }
 
     window.onload = () => {
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('service-worker.js');
-      }
       renderPots();
     };
   </script>
