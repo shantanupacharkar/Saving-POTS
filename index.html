@@ -12,6 +12,7 @@
     .pot-card:hover { transform: scale(1.02); }
     .button-size { height: 38px; padding: 0 12px; } /* Ensures buttons are the same size as input fields */
     .icon-size { font-size: 18px; }
+    .delete-pot-btn { width: 100%; background-color: #ff4d4d; color: white; padding: 12px; border-radius: 6px; }
   </style>
 </head>
 <body class="p-4 font-sans">
@@ -50,7 +51,13 @@
 
     function formatTimestamp(timestamp) {
       const date = new Date(timestamp);
-      return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}`;
+      const hours = date.getHours();
+      const minutes = date.getMinutes();
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      const hour12 = hours % 12 || 12;
+      const formattedMinutes = minutes < 10 ? '0' + minutes : minutes;
+      const formattedDate = `${date.getDate()}-${date.getMonth() + 1}-${date.getFullYear()}`;
+      return `${hour12}:${formattedMinutes} ${ampm} (${formattedDate})`;
     }
 
     function renderPots() {
@@ -103,7 +110,7 @@
           ${expandedIndex === index ? `
             <div class="mt-4">
               ${transactionsHTML}
-              <button onclick="deletePot(${index})" class="text-red-500 mt-2 flex items-center space-x-2"><span>❌</span><span>Delete Pot</span></button>
+              <button onclick="deletePot(${index})" class="delete-pot-btn mt-4 flex items-center justify-center space-x-2"><span>❌</span><span>Delete Pot</span></button>
             </div>
           ` : ''}
         `;
