@@ -100,36 +100,36 @@
     }
 
     function showTransactionHistory(index) {
-      const pot = pots[index];
-      const historyContainer = document.getElementById(`history-${index}`);
+  const pot = pots[index];
+  const historyContainer = document.getElementById(`history-${index}`);
+
+  // Clear previous history content
+  historyContainer.innerHTML = '';
+
+  // If there are no transactions
+  if (pot.transactions.length === 0) {
+    historyContainer.innerHTML = '<p>No transactions yet</p>';
+    return;
+  }
+
+  // Sort transactions in descending order by timestamp
+  pot.transactions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+  // Render each transaction
+  pot.transactions.forEach(transaction => {
+    const transactionEl = document.createElement('div');
+    transactionEl.className = 'transaction';
     
-      // Clear previous history content
-      historyContainer.innerHTML = '';
+    transactionEl.innerHTML = `
+      <div class="flex justify-between">
+        <span>${transaction.type === 'added' ? 'Added' : 'Removed'} ₹${transaction.amount.toLocaleString()}</span>
+        <span>(${transaction.timestamp})</span>
+      </div>
+    `;
     
-      // If there are no transactions
-      if (pot.transactions.length === 0) {
-        historyContainer.innerHTML = '<p>No transactions yet</p>';
-        return;
-      }
-    
-      // Sort transactions in descending order
-      pot.transactions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    
-      // Render each transaction
-      pot.transactions.forEach(transaction => {
-        const transactionEl = document.createElement('div');
-        transactionEl.className = 'transaction';
-        
-        transactionEl.innerHTML = `
-          <div class="flex justify-between">
-            <span>${transaction.type === 'added' ? 'Added' : 'Removed'} ₹${transaction.amount.toLocaleString()}</span>
-            <span>(${transaction.timestamp})</span>
-          </div>
-        `;
-        
-        historyContainer.appendChild(transactionEl);
-      });
-    }
+    historyContainer.appendChild(transactionEl);
+  });
+}
 
     
     function createPot() {
@@ -145,47 +145,48 @@
     }
 
     function addMoney(index) {
-      const input = document.getElementById(`add-${index}`);
-      const amount = parseFloat(input.value);
-      
-      if (isNaN(amount) || amount <= 0) return;
-    
-      pots[index].amount += amount;
-    
-      // Save transaction
-      pots[index].transactions.push({
-        type: 'added',
-        amount: amount,
-        timestamp: new Date().toLocaleString('en-GB', { hour12: true }) // 12-hour format
-      });
-    
-      savePots();
-      renderPots();
-    }
-    
-    function removeMoney(index) {
-      const input = document.getElementById(`add-${index}`);
-      const amount = parseFloat(input.value);
-      
-      if (isNaN(amount) || amount <= 0) return;
-    
-      // Restrict removing more than available amount
-      if (amount > pots[index].amount) {
-        return alert("You cannot remove more money than what is in the pot.");
-      }
-    
-      pots[index].amount = Math.max(0, pots[index].amount - amount);
-    
-      // Save transaction
-      pots[index].transactions.push({
-        type: 'removed',
-        amount: amount,
-        timestamp: new Date().toLocaleString('en-GB', { hour12: true }) // 12-hour format
-      });
-    
-      savePots();
-      renderPots();
-    }
+  const input = document.getElementById(`add-${index}`);
+  const amount = parseFloat(input.value);
+  
+  if (isNaN(amount) || amount <= 0) return;
+
+  pots[index].amount += amount;
+
+  // Save transaction with timestamp
+  pots[index].transactions.push({
+    type: 'added',
+    amount: amount,
+    timestamp: new Date().toLocaleString('en-GB', { hour12: true }) // 12-hour format
+  });
+
+  savePots();
+  renderPots();
+}
+
+function removeMoney(index) {
+  const input = document.getElementById(`add-${index}`);
+  const amount = parseFloat(input.value);
+  
+  if (isNaN(amount) || amount <= 0) return;
+
+  // Restrict removing more than available amount
+  if (amount > pots[index].amount) {
+    return alert("You cannot remove more money than what is in the pot.");
+  }
+
+  pots[index].amount = Math.max(0, pots[index].amount - amount);
+
+  // Save transaction with timestamp
+  pots[index].transactions.push({
+    type: 'removed',
+    amount: amount,
+    timestamp: new Date().toLocaleString('en-GB', { hour12: true }) // 12-hour format
+  });
+
+  savePots();
+  renderPots();
+}
+
 
     window.onload = () => {
       if ('serviceWorker' in navigator) {
