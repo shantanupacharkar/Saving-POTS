@@ -8,20 +8,18 @@
   <title>My Savings Pots</title>
   <style>
     body { background-color: #f9fafb; }
-    .pot-card { transition: all 0.2s ease-in-out; }
+    .pot-card { transition: all 0.2s ease-in-out; cursor: pointer; }
     .pot-card:hover { transform: scale(1.02); }
   </style>
 </head>
-<body class="p-4 font-sans relative">
+<body class="p-4 font-sans">
   <div class="max-w-xl mx-auto">
     <div class="flex justify-between items-center mb-4">
       <h1 class="text-2xl font-bold">💰 My Savings Pots</h1>
-      <!-- Create Pot Toggle Button -->
-      <button onclick="togglePotForm()" id="fabButton" class="bg-blue-500 text-white text-2xl rounded-full w-10 h-10 flex items-center justify-center shadow-md">＋</button>
+      <button id="expandBtn" onclick="toggleForm()" class="bg-blue-500 text-white w-10 h-10 rounded-full text-xl">＋</button>
     </div>
 
-    <!-- Hidden form container that appears on expand -->
-    <div id="createPotForm" class="mb-6 bg-white p-4 rounded-xl shadow transition-all duration-300 overflow-hidden max-h-0 opacity-0">
+    <div id="formContainer" class="mb-6 bg-white p-4 rounded-xl shadow hidden">
       <h2 class="font-semibold mb-2">Create New Pot</h2>
       <input id="potName" type="text" placeholder="Name (e.g., Europe Trip)" class="border p-2 w-full rounded mb-2">
       <input id="potGoal" type="number" placeholder="Goal Amount" class="border p-2 w-full rounded mb-2">
@@ -33,19 +31,37 @@
 
   <script>
     let pots = JSON.parse(localStorage.getItem('pots') || '[]');
+    let transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
 
     function savePots() {
       localStorage.setItem('pots', JSON.stringify(pots));
+    }
+
+    function saveTransactions() {
+      localStorage.setItem('transactions', JSON.stringify(transactions));
+    }
+
+    function toggleForm() {
+      const form = document.getElementById('formContainer');
+      form.classList.toggle('hidden');
     }
 
     function renderPots() {
       const container = document.getElementById('potsContainer');
       container.innerHTML = '';
 
+      if (pots.length === 0) {
+        container.innerHTML = '<div class="text-center bg-white rounded-xl shadow p-6" style="padding: 10px;">' +
+          '<button onclick="toggleForm()" class="bg-blue-500 text-white px-4 py-2 rounded">Create First Pot</button>' +
+          '</div>';
+        return;
+      }
+
       pots.forEach((pot, index) => {
         const percentage = Math.min(100, (pot.amount / pot.goal) * 100);
         const potEl = document.createElement('div');
         potEl.className = 'bg-white rounded-xl shadow p-4 pot-card';
+        potEl.ondblclick = () => toggleHistory(index);
         potEl.innerHTML = `
           <div class="flex justify-between items-center mb-1">
             <div class="font-semibold">${pot.name}</div>
@@ -54,14 +70,33 @@
           <div class="w-full bg-gray-200 rounded-full h-2.5 mb-4">
             <div class="bg-green-500 h-2.5 rounded-full" style="width: ${percentage}%;"></div>
           </div>
-          <div class="flex space-x-2">
+          <div class="flex space-x-2 mb-2">
             <input type="number" id="add-${index}" placeholder="Amount" class="border p-1 rounded w-full">
             <button onclick="addMoney(${index})" class="bg-green-500 text-white px-2 rounded">➕</button>
             <button onclick="removeMoney(${index})" class="bg-red-500 text-white px-2 rounded">➖</button>
           </div>
+          <div class="text-right">
+            <button onclick="event.stopPropagation(); deletePot(${index})" class="text-red-500 text-xs">🗑 Delete</button>
+          </div>
+          <div id="history-${index}" class="hidden mt-3 text-sm text-gray-700"></div>
         `;
         container.appendChild(potEl);
       });
+    }
+
+    function toggleHistory(index) {
+      const historyDiv = document.getElementById(`history-${index}`);
+      if (historyDiv.classList.contains('hidden')) {
+        const history = transactions
+          .filter(txn => txn.potIndex === index)
+          .sort((a, b) => b.time - a.time)
+          .map(txn => `<div>${new Date(txn.time).toLocaleString()}: ${txn.type} ₹${txn.amount}</div>`) // descending
+          .join('');
+        historyDiv.innerHTML = `<div class="border-t pt-2 mt-2">${history || 'No transactions yet.'}</div>`;
+        historyDiv.classList.remove('hidden');
+      } else {
+        historyDiv.classList.add('hidden');
+      }
     }
 
     function createPot() {
@@ -73,7 +108,7 @@
       renderPots();
       document.getElementById('potName').value = '';
       document.getElementById('potGoal').value = '';
-      togglePotForm();
+      document.getElementById('formContainer').classList.add('hidden');
     }
 
     function addMoney(index) {
@@ -81,7 +116,9 @@
       const amount = parseFloat(input.value);
       if (isNaN(amount) || amount <= 0) return;
       pots[index].amount += amount;
+      transactions.push({ potIndex: index, amount, type: 'Added', time: Date.now() });
       savePots();
+      saveTransactions();
       renderPots();
     }
 
@@ -90,24 +127,19 @@
       const amount = parseFloat(input.value);
       if (isNaN(amount) || amount <= 0) return;
       pots[index].amount = Math.max(0, pots[index].amount - amount);
+      transactions.push({ potIndex: index, amount, type: 'Removed', time: Date.now() });
       savePots();
+      saveTransactions();
       renderPots();
     }
 
-    function togglePotForm() {
-      const form = document.getElementById('createPotForm');
-      const fab = document.getElementById('fabButton');
-      const isHidden = form.classList.contains('max-h-0');
-
-      if (isHidden) {
-        form.classList.remove('max-h-0', 'opacity-0');
-        form.classList.add('max-h-screen', 'opacity-100');
-        fab.innerText = '×';
-      } else {
-        form.classList.add('max-h-0', 'opacity-0');
-        form.classList.remove('max-h-screen', 'opacity-100');
-        fab.innerText = '＋';
-      }
+    function deletePot(index) {
+      if (!confirm('Delete this pot?')) return;
+      pots.splice(index, 1);
+      transactions = transactions.filter(txn => txn.potIndex !== index);
+      savePots();
+      saveTransactions();
+      renderPots();
     }
 
     window.onload = () => {
